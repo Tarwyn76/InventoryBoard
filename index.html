@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inventory – Hybrid (Embed)</title>
+<style>
+:root{--bg:#0b1220;--ink:#e5e7eb;--muted:#9ca3af;--card:#0f172a;--ring:#1f2937;--panel:#111827;}
+*{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial}
+.wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+@media (max-width: 1000px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--ring);border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.card header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.muted{color:var(--muted)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 12px}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.controls input,.controls button{height:36px;background:#0b1220;color:var(--ink);border:1px solid var(--ring);border-radius:10px;padding:0 10px}
+.controls button{cursor:pointer}
+#outboxBadge{padding:2px 6px;border:1px dashed var(--muted);border-radius:999px}
+table{width:100%;border-collapse:separate;border-spacing:0 6px}
+td,th{padding:8px 6px;background:var(--panel)}
+th{text-align:left;color:var(--muted);font-weight:600}
+#minAlerts .alert{padding:8px 10px;background:#3a2e17;border:1px solid #6a531a;border-radius:8px;margin:6px 0}
+#minAlerts .ok{padding:8px 10px;background:#0f2e21;border:1px solid #256a45;border-radius:8px;margin:6px 0}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ring);border-radius:999px;padding:6px 10px}
+.netdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b}
+[data-net="online"] .netdot{background:#10b981}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card" id="card-inventory">
+    <header><h2>Current Inventory</h2></header>
+    <div class="body">
+      <div id="minAlerts"></div>
+    </div>
+    <div class="body inventory-body"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="card-live">
+    <header>
+      <h2>Live</h2>
+      <span class="badge"><span class="netdot"></span><span id="netText">offline</span><span id="outboxBadge" class="muted">outbox: 0</span></span>
+    </header>
+    <div class="controls">
+      <div><input id="locInput" placeholder="Location (e.g., HSSB)" value="HSSB"/></div>
+      <div><button id="modeToggle" data-mode="IN">IN</button></div>
+      <div><input id="qtyInput" type="number" min="1" step="1" value="1"/></div>
+      <div style="flex:1 1 240px"><input id="scanInput" placeholder="Scan here… (Enter to submit)"/></div>
+      <div><button id="scanBtn">Scan</button></div>
+    </div>
+    <div class="muted" style="margin-top:8px" id="scanHint"></div>
+  </section>
+
+  <section class="card" id="card-scanned">
+    <header><h2>Scanned</h2></header>
+    <div class="kv">
+      <div class="muted">Location</div><div id="scan_loc" class="mono">—</div>
+      <div class="muted">Mode</div><div id="scan_mode" class="mono">—</div>
+      <div class="muted">Quantity</div><div id="scan_qty" class="mono">—</div>
+      <div class="muted">SKU</div><div id="scan_sku" class="mono">—</div>
+      <div class="muted">Serial</div><div id="scan_serial" class="mono">—</div>
+      <div class="muted">MAC</div><div id="scan_mac" class="mono">—</div>
+      <div class="muted">EAN</div><div id="scan_ean" class="mono">—</div>
+      <div class="muted">RFPI</div><div id="scan_rfpi" class="mono">—</div>
+      <div class="muted">IPUI</div><div id="scan_ipui" class="mono">—</div>
+    </div>
+  </section>
+
+  <section class="card" id="card-movements">
+    <header><h2>Recent Movements</h2></header>
+    <div class="body" id="movementsBody"><p class="muted">No movements yet.</p></div>
+  </section>
+</div>
+
+<script id="seed-db" type="application/json">{"items": {"700512377": {"sku": "700512377", "name": "Avaya power supply", "desc": "Avaya J100/1600 Series 5V Power Supply", "unknown": false, "min": 0, "stock": 30, "stockByLoc": {"[object HTMLElement]": 30}, "codes": ["700512377"]}, "700512394": {"sku": "700512394", "name": "J159", "desc": "two screen w/USB", "unknown": false, "min": 100, "stock": 4, "stockByLoc": {"[object HTMLElement]": 4}, "codes": ["700512394"]}, "700512402": {"sku": "700512402", "name": "JWIFI01A", "desc": "Avaya WiFi module", "unknown": false, "min": 2, "stock": 8, "stockByLoc": {"[object HTMLElement]": 8}, "codes": ["700512402"]}, "700513569": {"sku": "700513569", "name": "J179", "desc": "4 button w JEM24 port", "unknown": false, "min": 100, "stock": 39, "stockByLoc": {"[object HTMLElement]": 39}, "codes": ["700513569"]}, "700513631": {"sku": "700513631", "name": "J100 Wall Mount", "desc": "wallmount with cord", "unknown": false, "min": 100, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["700513631"]}, "700513916": {"sku": "700513916", "name": "J139", "desc": "basic model", "unknown": false, "min": 500, "stock": 89, "stockByLoc": {"[object HTMLElement]": 89}, "codes": ["700513916"]}, "700514337": {"sku": "700514337", "name": "JEM2402C-1015", "desc": "SideCar", "unknown": false, "min": 0, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["700514337"]}, "700514685": {"sku": "700514685", "name": "K175CW0A vantage", "desc": "Door Camera", "unknown": false, "min": 0, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["700514685"]}, "25093110092": {"sku": "25093110092", "name": "Avaya J100", "desc": "Replacement Corded Handset", "unknown": false, "min": 0, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["25093110092"]}, "841885104731": {"sku": "841885104731", "name": "YHS36�Dual", "desc": "Wired Headset with QD to RJ Port", "unknown": false, "min": 0, "stock": 77, "stockByLoc": {"[object HTMLElement]": 77}, "codes": ["841885104731"]}, "841885121318": {"sku": "841885121318", "name": "USB/qd trainer cable", "desc": "Y Cable - USB/QD Trainer Cable", "unknown": false, "min": 0, "stock": 43, "stockByLoc": {"[object HTMLElement]": 43}, "codes": ["841885121318"]}, "6H30027317": {"sku": "6H30027317", "name": "UH48", "desc": "Yealink ANC USB Wired Headset", "unknown": false, "min": 0, "stock": 349, "stockByLoc": {"[object HTMLElement]": 349}, "codes": ["6H30027317"]}, "6938818305519": {"sku": "6938818305519", "name": "CP700", "desc": "Medium Level Portable Speakerphone", "unknown": false, "min": 0, "stock": 5, "stockByLoc": {"[object HTMLElement]": 5}, "codes": ["6938818305519"]}, "841885109217": {"sku": "841885109217", "name": "W77P", "desc": "Yealink DECT Wireless", "unknown": false, "min": 0, "stock": 272, "stockByLoc": {"[object HTMLElement]": 272}, "codes": ["841885109217"]}, "841885123893": {"sku": "841885123893", "name": "AX83H", "desc": "Wi-Fi Handset", "unknown": false, "min": 0, "stock": 3, "stockByLoc": {"[object HTMLElement]": 3}, "codes": ["841885123893"]}, "841885109163": {"sku": "841885109163", "name": "W57R", "desc": "Yealink DECT Handset", "unknown": false, "min": 0, "stock": 11, "stockByLoc": {"[object HTMLElement]": 11}, "codes": ["841885109163"]}, "841885105639": {"sku": "841885105639", "name": "MP50", "desc": "Yealink USB Phone for Microsoft Teams", "unknown": false, "min": 0, "stock": 8, "stockByLoc": {"[object HTMLElement]": 8}, "codes": ["841885105639"]}, "840494606735": {"sku": "840494606735", "name": "Cetis 3500", "desc": "direct call phone", "unknown": false, "min": 0, "stock": 49, "stockByLoc": {"[object HTMLElement]": 49}, "codes": ["840494606735"]}, "706487015208": {"sku": "706487015208", "name": "Jabra Evolve 40 Link UC", "desc": "Stereo USB Headset - USB A", "unknown": false, "min": 0, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["706487015208"]}, "706487020028": {"sku": "706487020028", "name": "Jabra Evolve2 40 SE UC", "desc": "Stereo USB Headset - USB A", "unknown": false, "min": 0, "stock": 0, "stockByLoc": {"[object HTMLElement]": 0}, "codes": ["706487020028"]}, "706487015277": {"sku": "706487015277", "name": "Link 265 USB to QD", "desc": "Jabra Link 265 Usb/QD Training Cable", "unknown": false, "min": 0, "stock": 27, "stockByLoc": {"[object HTMLElement]": 27}, "codes": ["706487015277"]}, "706487015604": {"sku": "706487015604", "name": "Biz 2400 II Duo", "desc": "Jabra Biz 2400 II Duo, UNC std.", "unknown": false, "min": 20, "stock": 58, "stockByLoc": {"[object HTMLElement]": 58}, "codes": ["706487015604"]}, "26281018015": {"sku": "26281018015", "name": "Handset Headrest", "desc": "Softalk Ergonomic Telephone Shoulder Rest", "unknown": false, "min": 0, "stock": 18, "stockByLoc": {"[object HTMLElement]": 18}, "codes": ["26281018015"]}}, "movements": [{"ts": 1758288524228, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 8, "code": "12345", "loc": "HLMC", "site": "HLMC"}, {"ts": 1758288475907, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 7, "code": "12345", "loc": "HLMC", "site": "HLMC"}, {"ts": 1758288461331, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 6, "code": "12345", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758288428555, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 5, "code": "12345", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758288426340, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 4, "code": "12345", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758288421516, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 3, "code": "12345", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758288412515, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 2, "code": "12345", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758288391707, "type": "MOVE", "mode": "IN", "sku": "12345", "qty": 1, "delta": 1, "balance": 1, "code": "12345", "loc": "C221", "site": "C221"}, {"ts": 1758228324281, "type": "MOVE", "mode": "IN", "sku": "12346", "qty": 1, "delta": 1, "balance": 3, "code": "12346", "loc": "C221", "site": "C221"}, {"ts": 1758228209991, "type": "MOVE", "mode": "IN", "sku": "12346", "qty": 1, "delta": 1, "balance": 2, "code": "12346", "loc": "HSSB", "site": "HSSB"}, {"ts": 1758224867123, "type": "MOVE", "mode": "IN", "sku": "12346", "qty": 1, "delta": 1, "balance": 1, "code": "12346", "loc": "", "site": ""}]}</script>
+
+<script>
+// ====== NET STATUS ======
+function updateNet(){ document.documentElement.setAttribute('data-net', navigator.onLine ? 'online' : 'offline'); document.getElementById('netText').textContent = navigator.onLine ? 'online' : 'offline'; }
+addEventListener('online', updateNet); addEventListener('offline', updateNet); updateNet();
+
+// ====== HYBRID API + OUTBOX ======
+const API = { BASE: localStorage.getItem('api.base') || 'http://localhost:3000', TIMEOUT_MS: 8000 };
+const OutboxDB = (()=>{ let dbp=null; function open(){ if(dbp) return dbp; dbp = new Promise((res,rej)=>{ const req=indexedDB.open('inventoryOutbox',1); req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains('movements')) db.createObjectStore('movements',{keyPath:'id',autoIncrement:true}); }; req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); return dbp; }
+  async function add(payload){ const db=await open(); return new Promise((res,rej)=>{ const tx=db.transaction('movements','readwrite'); tx.objectStore('movements').add(Object.assign({createdAt:Date.now()}, payload)); tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); }); }
+  async function all(){ const db=await open(); return new Promise((res,rej)=>{ const tx=db.transaction('movements','readonly'); const rq=tx.objectStore('movements').getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error); }); }
+  async function remove(id){ const db=await open(); return new Promise((res,rej)=>{ const tx=db.transaction('movements','readwrite'); tx.objectStore('movements').delete(id); tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); }); }
+  return { add, all, remove }; })();
+function updateOutboxBadge(){ OutboxDB.all().then(list=>{ const el=document.getElementById('outboxBadge'); if(el){ el.textContent='outbox: '+list.length; el.style.borderColor = list.length ? '#f59e0b' : 'var(--muted)'; } }); }
+function fetchT(url,opts={}){ return new Promise((resolve,reject)=>{ const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(), API.TIMEOUT_MS); fetch(url, Object.assign({signal:ctrl.signal}, opts)).then(r=>{ clearTimeout(to); resolve(r); }).catch(e=>{ clearTimeout(to); reject(e); }); }); }
+const Api = {
+  async postScan(m){ const r = await fetchT(API.BASE+'/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(m)}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); },
+  async getStock(loc){ const r=await fetchT(API.BASE+'/stock?loc='+encodeURIComponent(loc)); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); },
+  async getAlerts(loc){ const r=await fetchT(API.BASE+'/alerts?loc='+encodeURIComponent(loc)); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+};
+let flushBusy=false, backoff=1000;
+async function flushOutbox(){ if(flushBusy) return; flushBusy=true; try{ const list=await OutboxDB.all(); for(const rec of list.sort((a,b)=>a.id-b.id)){ await Api.postScan(rec.payload); await OutboxDB.remove(rec.id); backoff=1000; } }catch(e){ backoff=Math.min(backoff*2,60000); setTimeout(()=>flushOutbox(), backoff); } finally{ flushBusy=false; updateOutboxBadge(); }}
+addEventListener('online', ()=>{ flushOutbox(); updateOutboxBadge(); }); setInterval(()=>{ if(navigator.onLine) flushOutbox(); }, 15000);
+
+// ====== APP STATE & DB ======
+const state = { mode:'IN', qty:1, loc:'HSSB', pendingSku:null };
+const db = { items: {}, codeToSku: { sku: {}, upc: {}, ean: {} }, macIndex: {}, serialIndex: {}, rfpiIndex: {}, ipuiIndex: {}, movements: [] };
+
+// ====== NORMALIZERS ======
+const hex = s => (s||'').toUpperCase().replace(/[^0-9A-F]/g,'');
+const onlyDigits = s => (s||'').replace(/[^0-9]+/g,'');
+function upcCheckDigit(d11){ if(!/^\d{11}$/.test(d11)) return null; const a=d11.split('').map(Number); const cd=(10-((a.filter((_,i)=>i%2===0).reduce((x,y)=>x+y,0)*3 + a.filter((_,i)=>i%2===1).reduce((x,y)=>x+y,0))%10))%10; return String(cd); }
+function ean13CheckDigit(d12){ if(!/^\d{12}$/.test(d12)) return null; const a=d12.split('').map(Number); const cd=(10-(((a.filter((_,i)=>i%2===0).reduce((x,y)=>x+y,0)) + a.filter((_,i)=>i%2===1).reduce((x,y)=>x+y,0)*3)%10))%10; return String(cd); }
+function normalizeUPC(s){ const d=onlyDigits(s); if(d.length===12){ const cd=upcCheckDigit(d.slice(0,11)); return cd && cd===d[11] ? d : null; } return null; }
+function normalizeEAN13(s){ const d=onlyDigits(s); if(d.length===13){ const cd=ean13CheckDigit(d.slice(0,12)); return cd && cd===d[12] ? d : null; } return null; }
+function normalizeMAC(s){ const h=hex(s); if(h.length!==12) return null; return h; }
+function normalizeSerial(s){ const t=String(s||'').trim(); if(t.length<6||t.length>64) return null; if(!/^[A-Za-z0-9._-]+$/.test(t)) return null; return t; }
+function normalizeRFlike(s){ const h=hex(s); return h.length>=8 ? h : null; }
+
+// ====== DB HELPERS ======
+function addItem(item){ const { sku } = item; if(!sku) throw new Error('SKU required'); db.items[sku] = Object.assign({ desc:'', serialized:false, identifiers:{}, locations:{}, units:[] }, item); }
+function reindex(){ db.codeToSku={ sku:{}, upc:{}, ean:{} }; db.macIndex={}; db.serialIndex={}; db.rfpiIndex={}; db.ipuiIndex={}; for(const sku in db.items){ const it=db.items[sku]; db.codeToSku.sku[sku]=sku; if(it.identifiers.upc) db.codeToSku.upc[it.identifiers.upc]=sku; if(it.identifiers.ean) db.codeToSku.ean[it.identifiers.ean]=sku; if(it.serialized){ for(const u of it.units){ if(u.mac) db.macIndex[u.mac]={sku,serial:u.serial}; if(u.serial) db.serialIndex[u.serial]={sku}; if(u.rfpi) db.rfpiIndex[u.rfpi]={sku,serial:u.serial}; if(u.ipui) db.ipuiIndex[u.ipui]={sku,serial:u.serial}; } } } }
+function addUnit(sku, u){ const it=db.items[sku]; if(!it) throw new Error('Missing item'); if(!it.serialized) throw new Error('Not serialized'); if(u.mac && db.macIndex[u.mac]) throw new Error('MAC exists'); if(u.serial && db.serialIndex[u.serial]) throw new Error('Serial exists'); if(u.rfpi && db.rfpiIndex[u.rfpi]) throw new Error('RFPI exists'); if(u.ipui && db.ipuiIndex[u.ipui]) throw new Error('IPUI exists'); it.units.push(u); it.locations[u.loc]=(it.locations[u.loc]||0)+1; reindex(); }
+function recordAndSync(mv){ db.movements.unshift({ when:new Date().toISOString(), sku:mv.sku, qty:mv.qty, dir:mv.dir, loc:mv.loc, serials:mv.serials||[], macs:mv.macs||[] }); if(db.movements.length>2000) db.movements.pop(); const payload = { sku:mv.sku, qty:mv.qty, dir:mv.dir, loc:mv.loc, serial:(mv.serial||((mv.serials||[])[0]||null)), mac:(mv.mac||((mv.macs||[])[0]||null)), rfpi:mv.rfpi||null, ipui:mv.ipui||null }; if(navigator.onLine){ Api.postScan(payload).then(()=>updateOutboxBadge()).catch(async()=>{ await OutboxDB.add({payload}); updateOutboxBadge(); }); } else { OutboxDB.add({payload}).then(updateOutboxBadge); } }
+function setHint(s){ const el=document.getElementById('scanHint'); if(el) el.textContent=s||''; }
+
+// ====== RENDERING ======
+function renderLive(){ document.getElementById('scan_loc').textContent = state.loc; document.getElementById('scan_mode').textContent = state.mode; document.getElementById('scan_qty').textContent = state.qty; }
+function renderInventory(){ const root=document.querySelector('.inventory-body'); const keys=Object.keys(db.items); let h='<table><thead><tr><th>SKU</th><th>Description</th><th style="text-align:right">Total</th></tr></thead><tbody>'; for(const sku of keys){ const it=db.items[sku]; const total=Object.values(it.locations||{}).reduce((a,b)=>a+b,0); h += '<tr><td>'+sku+(it.serialized?' • serial':'')+'</td><td>'+ (it.desc||'') +'</td><td style="text-align:right">'+total+'</td></tr>'; } h+='</tbody></table>'; root.innerHTML=h; }
+function renderMovements(){ const root=document.getElementById('movementsBody'); const take=db.movements.slice(0,20); root.innerHTML = take.map(m=>'<div class="mono" style="padding:6px 8px;background:var(--panel);margin-bottom:6px;">'+m.sku+' • '+(m.dir==='IN'?'+':'-')+m.qty+' • '+m.dir+'</div>').join('') || '<p class="muted">No movements yet.</p>'; }
+const MIN_STOCK_RULES = [ {model:'J139',qty:500}, {model:'J159',qty:100}, {model:'J179',qty:100}, {containsAll:['J100','WALL MOUNT'],qty:100}, {containsAny:['POWER SUPPLY','POWER SUPPLIES'],qty:15}, {model:'JWIFI01A',qty:2} ];
+const MIN_STOCK = { 'HSSB': MIN_STOCK_RULES, 'C221': MIN_STOCK_RULES };
+function normText(s){return (s||'').toUpperCase();} function wordHit(hay,needle){const n=needle.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&');const re=new RegExp('(^|[^A-Z0-9])'+n+'([^A-Z0-9]|$)');return re.test(hay);}
+function matchesRule(it,sku,rule){const t=normText(it.desc||sku); if(rule.model&&wordHit(t,rule.model)) return true; if(rule.containsAll&&rule.containsAll.map(normText).every(x=>t.includes(x))) return true; if(rule.containsAny&&rule.containsAny.map(normText).some(x=>t.includes(x))) return true; return false;}
+function minRequiredFor(it,sku,loc){const rules=MIN_STOCK[loc]; if(!rules) return 0; for(const r of rules) if(matchesRule(it,sku,r)) return r.qty||0; return 0;}
+function renderMinAlerts(){ const host=document.getElementById('minAlerts'); const alerts=[]; for(const [sku,it] of Object.entries(db.items)){ for(const loc of Object.keys(MIN_STOCK)){ const have=Number((it.locations||{})[loc]||0); const need=minRequiredFor(it,sku,loc); if(need>0 && have<need) alerts.push({sku,desc:it.desc||'',loc,have,need}); } } host.innerHTML = alerts.length? alerts.map(a=>'<div class="alert mono">'+a.loc+': <strong>'+a.sku+'</strong> — '+(a.desc||'')+' <span class="muted">('+a.have+' / min '+a.need+')</span></div>').join('') : '<div class="ok"><strong>All set.</strong> All tracked minimums met.</div>'; }
+
+// ====== SCAN FLOW ======
+function showScanResult(info){ document.getElementById('scan_sku').textContent = info.sku||'—'; document.getElementById('scan_serial').textContent = info.serial||'—'; document.getElementById('scan_mac').textContent = info.mac||'—'; document.getElementById('scan_ean').textContent = info.ean||'—'; document.getElementById('scan_rfpi').textContent = info.rfpi||'—'; document.getElementById('scan_ipui').textContent = info.ipui||'—'; setHint(Object.entries(info).filter(([k,v])=>v && ['sku','serial','mac','ean','rfpi','ipui','qty','dir','loc'].includes(k)).map(([k,v])=>k.toUpperCase()+': '+v).join(' • ')); }
+function autoAddNewItemFromIdentifier(raw){ const d=onlyDigits(raw||''); const upc=normalizeUPC(d); const ean=normalizeEAN13(d); const numeric = d && d.length>=6 && d.length<=14 ? d : null; const sku=upc||ean||numeric; if(!sku) return false; addItem({ sku, desc:'', serialized:true, identifiers:{ upc: upc||undefined, ean: ean||undefined }, locations:{}, units:[] }); reindex(); state.pendingSku=sku; setHint('Item added. Scan Serial/MAC/RFPI/IPUI for '+sku); renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); showScanResult({ sku, ean: ean||undefined, loc: state.loc, dir: state.mode }); return true; }
+async function handleScan(raw){ const input=String(raw||'').trim(); if(!input) return;
+  if(state.pendingSku){ const mac=normalizeMAC(input); const rf=normalizeRFlike(input); const serial=normalizeSerial(input); const ipui=rf; const already = (mac&&db.macIndex[mac]) || (serial&&db.serialIndex[serial]) || (rf&&db.rfpiIndex[rf]) || (ipui&&db.ipuiIndex[ipui]); if(already){ alert('That identifier already exists on another unit.'); return; } const unit={ loc: state.loc }; if(mac) unit.mac=mac; if(serial) unit.serial=serial; if(rf) unit.rfpi=rf; if(ipui && !unit.rfpi) unit.ipui=ipui; if(!unit.serial && !unit.mac && !unit.rfpi && !unit.ipui){ alert('Please scan a Serial, MAC, RFPI or IPUI.'); return; } addUnit(state.pendingSku, unit); recordAndSync({ sku: state.pendingSku, qty:1, dir: state.mode, loc: state.loc, serials: unit.serial?[unit.serial]:[], macs: unit.mac?[unit.mac]:[] }); state.pendingSku=null; renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); showScanResult({ sku: unit.serial||unit.mac||'', loc: state.loc, dir: state.mode }); return; }
+  const upc=normalizeUPC(input); const ean=normalizeEAN13(input); const sku = db.codeToSku.upc[upc] || db.codeToSku.ean[ean] || db.codeToSku.sku[input] || null;
+  if(sku){ const it=db.items[sku]; if(it.serialized){ state.pendingSku = sku; setHint('Serial item. Scan Serial/MAC/RFPI/IPUI for '+sku); showScanResult({ sku, loc: state.loc, dir: state.mode }); }
+    else { const delta = state.mode==='IN' ? state.qty : -state.qty; it.locations[state.loc]=(it.locations[state.loc]||0) + delta; if(it.locations[state.loc]<0) it.locations[state.loc]=0; recordAndSync({ sku, qty: Math.abs(delta), dir: state.mode, loc: state.loc }); renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); showScanResult({ sku, loc: state.loc, dir: state.mode, qty: state.qty }); }
+    return; }
+  if(autoAddNewItemFromIdentifier(input)) return;
+  const mac=normalizeMAC(input), serial=normalizeSerial(input), rf=normalizeRFlike(input), ipui=rf;
+  if(mac && db.macIndex[mac]){ const { sku } = db.macIndex[mac]; state.pendingSku=sku; return handleScan(input); }
+  if(serial && db.serialIndex[serial]){ const { sku } = db.serialIndex[serial]; state.pendingSku=sku; return handleScan(input); }
+  setHint('Unrecognized code.');
+}
+
+// ====== SEED LOADER ======
+(function(){ function mapFromExternal(seed){ if(!seed||!seed.items) return; db.items={}; db.movements.length=0; for(const [sku,item] of Object.entries(seed.items)){ const it={ sku, desc: (item.name||'') + (item.desc? ' — '+item.desc : ''), serialized:false, identifiers:{}, locations:{}, units:[] }; if(Array.isArray(item.codes)){ for(const c of item.codes){ if(/^\d{13}$/.test(c)) it.identifiers.ean=c; else if(/^\d{12}$/.test(c)) it.identifiers.upc=c; } } if(item.stockByLoc && typeof item.stockByLoc==='object'){ for(const [loc,qty] of Object.entries(item.stockByLoc)){ if(!loc || /\[object\s+HTMLElement\]/i.test(String(loc))) continue; const q=Number(qty)||0; if(q>0) it.locations[loc]=q; } } addItem(it); } reindex(); renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); }
+  try { const embedded = JSON.parse(document.getElementById('seed-db').textContent||'null'); if(embedded) mapFromExternal(embedded); } catch(e){}
+  try { fetch('inventory-db.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d) mapFromExternal(d); }); } catch(e){}
+})();
+
+// ====== WIRE UI ======
+document.getElementById('modeToggle').addEventListener('click', e=>{ e.currentTarget.dataset.mode = (e.currentTarget.dataset.mode==='IN'?'OUT':'IN'); e.currentTarget.textContent = e.currentTarget.dataset.mode; state.mode = e.currentTarget.dataset.mode; renderLive(); });
+document.getElementById('locInput').addEventListener('change', e=>{ state.loc = e.target.value||''; renderLive(); });
+document.getElementById('qtyInput').addEventListener('change', e=>{ state.qty = Math.max(1, Number(e.target.value)||1); renderLive(); });
+document.getElementById('scanBtn').addEventListener('click', ()=>{ const inp=document.getElementById('scanInput'); handleScan(inp.value); inp.value=''; inp.focus(); });
+document.getElementById('scanInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); const inp=e.currentTarget; handleScan(inp.value); inp.value=''; } });
+updateOutboxBadge();
+</script>
+</body>
+</html>
