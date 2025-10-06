@@ -10,6 +10,10 @@
 .wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
 @media (max-width: 1000px){.wrap{grid-template-columns:1fr}}
 .num { text-align: right; }
+.num { text-align:right; }
+.num.ok   { color:#e5e7eb; }   /* white (default) */
+.num.warn { color:#facc15; }   /* yellow */
+.num.bad  { color:#ef4444; }   /* red */
 .card{background:var(--card);border:1px solid var(--ring);border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .card header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -22,11 +26,13 @@
 table{width:100%;border-collapse:separate;border-spacing:0 6px}
 td,th{padding:8px 6px;background:var(--panel)}
 th{text-align:left;color:var(--muted);font-weight:600}
+#minAlerts {display:none !important;}
 #minAlerts .alert{padding:8px 10px;background:#3a2e17;border:1px solid #6a531a;border-radius:8px;margin:6px 0}
 #minAlerts .ok{padding:8px 10px;background:#0f2e21;border:1px solid #256a45;border-radius:8px;margin:6px 0}
 .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ring);border-radius:999px;padding:6px 10px}
 .netdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b}
 [data-net="online"] .netdot{background:#10b981}
+
 </style>
 </head>
 <body>
@@ -124,27 +130,41 @@ function setHint(s){ const el=document.getElementById('scanHint'); if(el) el.tex
 
 // ====== RENDERING ======
 function renderLive(){ document.getElementById('scan_loc').textContent = state.loc; document.getElementById('scan_mode').textContent = state.mode; document.getElementById('scan_qty').textContent = state.qty; }
+<script>
+// Replace your current renderInventory() with this:
 function renderInventory(){
   const root = document.querySelector('.inventory-body');
-  const LOCS = ['HSSB','C221','HLCM'];
+  const LOCS = ['HSSB','C221','HLCM'];     // change names if needed
+  const APPROACH_PCT = 0.10;               // “approaching” = within 10% above min
 
-  // Build rows
+  // Table rows
   const rows = Object.entries(db.items).map(([sku,it])=>{
     const label = (it.desc && it.desc.trim()) ? it.desc : sku;
     const locs = it.locations || {};
     const counts = {};
-    LOCS.forEach(L => counts[L] = Number(locs[L]||0));
-    return { sku, label, counts };
+    LOCS.forEach(L => counts[L] = Number(locs[L] || 0));
+    return { sku, it, label, counts };
   }).sort((a,b)=> a.label.localeCompare(b.label,'en',{numeric:true,sensitivity:'base'}));
 
-  // HTML-escape
+  // Helpers
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => (
     { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c]
   ));
+  function cellClass(loc, have, it, sku){
+    // No minimums for HLCM
+    if (loc === 'HLCM') return 'ok';
+    const min = minRequiredFor(it, sku, loc) || 0;   // uses your existing min rules
+    if (min <= 0) return 'ok';
+    if (have < min) return 'bad';
+    const warnUpTo = Math.ceil(min * (1 + APPROACH_PCT));
+    if (have <= warnUpTo) return 'warn';
+    return 'ok';
+  }
 
-  // Totals per location
+  // Totals
   const totals = { HSSB:0, C221:0, HLCM:0 };
 
+  // Build HTML
   let h = '<table><thead><tr><th>Item</th>'
         + LOCS.map(L=>`<th class="num">${L}</th>`).join('')
         + '</tr></thead><tbody>';
@@ -152,11 +172,20 @@ function renderInventory(){
   for (const r of rows){
     LOCS.forEach(L => totals[L] += r.counts[L]);
     h += `<tr><td>${esc(r.label)}</td>`
-       + LOCS.map(L=>`<td class="num">${r.counts[L]}</td>`).join('')
+       + LOCS.map(L=>{
+           const cls = cellClass(L, r.counts[L], r.it, r.sku);
+           return `<td class="num ${cls}">${r.counts[L]}</td>`;
+         }).join('')
        + `</tr>`;
   }
 
+  h += '</tbody><tfoot><tr><th>Total</th>'
+     + LOCS.map(L=>`<th class="num">${totals[L]}</th>`).join('')
+     + '</tr></tfoot></table>';
+
+  root.innerHTML = h;
 }
+
 function renderMovements(){ const root=document.getElementById('movementsBody'); const take=db.movements.slice(0,20); root.innerHTML = take.map(m=>'<div class="mono" style="padding:6px 8px;background:var(--panel);margin-bottom:6px;">'+m.sku+' • '+(m.dir==='IN'?'+':'-')+m.qty+' • '+m.dir+'</div>').join('') || '<p class="muted">No movements yet.</p>'; }
 const MIN_STOCK_RULES = [ {model:'J139',qty:500}, {model:'J159',qty:100}, {model:'J179',qty:100}, {containsAll:['J100','WALL MOUNT'],qty:100}, {containsAny:['POWER SUPPLY','POWER SUPPLIES'],qty:15}, {model:'JWIFI01A',qty:2} ];
 const MIN_STOCK = { 'HSSB': MIN_STOCK_RULES, 'C221': MIN_STOCK_RULES };
