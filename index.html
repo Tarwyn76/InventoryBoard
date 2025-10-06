@@ -151,12 +151,11 @@ function renderInventory(){
     { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c]
   ));
   function cellClass(loc, have, it, sku){
-    // No minimums for HLCM
-    if (loc === 'HLCM') return 'ok';
-    const min = minRequiredFor(it, sku, loc) || 0;   // uses your existing min rules
+    if (loc === 'HLMC') return 'ok';                 // no minimums for HLMC
+    const min = minRequiredFor(it, sku, loc) || 0;   // uses your existing rules
     if (min <= 0) return 'ok';
     if (have < min) return 'bad';
-    const warnUpTo = Math.ceil(min * (1 + APPROACH_PCT));
+    const warnUpTo = Math.ceil(min * 1.10); // within 10% above min
     if (have <= warnUpTo) return 'warn';
     return 'ok';
   }
