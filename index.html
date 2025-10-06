@@ -32,7 +32,36 @@ th{text-align:left;color:var(--muted);font-weight:600}
 .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ring);border-radius:999px;padding:6px 10px}
 .netdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b}
 [data-net="online"] .netdot{background:#10b981}
+/* Compact inventory table rows */
+.inventory-body table{
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  table-layout: fixed;               /* enables ellipsis */
+}
 
+.inventory-body th,
+.inventory-body td{
+  padding: 2px 6px !important;       /* tighter */
+  background: transparent !important;
+  line-height: 1.2;
+  border-bottom: 1px solid var(--ring);
+}
+
+.inventory-body th.num,
+.inventory-body td.num{
+  text-align: right;
+  width: 72px;                       /* narrow number columns */
+}
+
+/* keep first column on one line with ellipsis */
+.inventory-body th:first-child,
+.inventory-body td:first-child{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+  
 </style>
 </head>
 <body>
@@ -170,7 +199,7 @@ function renderInventory(){
 
   for (const r of rows){
     LOCS.forEach(L => totals[L] += r.counts[L]);
-    h += `<tr><td>${esc(r.label)}</td>`
+    h += `<tr><td title="${esc(r.label)}">${esc(r.label)}</td>`
        + LOCS.map(L=>{
            const cls = cellClass(L, r.counts[L], r.it, r.sku);
            return `<td class="num ${cls}">${r.counts[L]}</td>`;
