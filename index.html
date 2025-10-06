@@ -123,7 +123,44 @@ function setHint(s){ const el=document.getElementById('scanHint'); if(el) el.tex
 
 // ====== RENDERING ======
 function renderLive(){ document.getElementById('scan_loc').textContent = state.loc; document.getElementById('scan_mode').textContent = state.mode; document.getElementById('scan_qty').textContent = state.qty; }
-function renderInventory(){ const root=document.querySelector('.inventory-body'); const keys=Object.keys(db.items); let h='<table><thead><tr><th>SKU</th><th>Description</th><th style="text-align:right">Total</th></tr></thead><tbody>'; for(const sku of keys){ const it=db.items[sku]; const total=Object.values(it.locations||{}).reduce((a,b)=>a+b,0); h += '<tr><td>'+sku+(it.serialized?' • serial':'')+'</td><td>'+ (it.desc||'') +'</td><td style="text-align:right">'+total+'</td></tr>'; } h+='</tbody></table>'; root.innerHTML=h; }
+function renderInventory(){
+  const root = document.querySelector('.inventory-body');
+  const LOCS = ['HSSB','C221','HLCM'];
+
+  // Build rows
+  const rows = Object.entries(db.items).map(([sku,it])=>{
+    const label = (it.desc && it.desc.trim()) ? it.desc : sku;
+    const locs = it.locations || {};
+    const counts = {};
+    LOCS.forEach(L => counts[L] = Number(locs[L]||0));
+    return { sku, label, counts };
+  }).sort((a,b)=> a.label.localeCompare(b.label,'en',{numeric:true,sensitivity:'base'}));
+
+  // HTML-escape
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c]
+  ));
+
+  // Totals per location
+  const totals = { HSSB:0, C221:0, HLCM:0 };
+
+  let h = '<table><thead><tr><th>Item</th>'
+        + LOCS.map(L=>`<th class="num">${L}</th>`).join('')
+        + '</tr></thead><tbody>';
+
+  for (const r of rows){
+    LOCS.forEach(L => totals[L] += r.counts[L]);
+    h += `<tr><td>${esc(r.label)}</td>`
+       + LOCS.map(L=>`<td class="num">${r.counts[L]}</td>`).join('')
+       + `</tr>`;
+  }
+
+  h += '</tbody><tfoot><tr><th>Total</th>'
+     + LOCS.map(L=>`<th class="num">${totals[L]}</th>`).join('')
+     + '</tr></tfoot></table>';
+
+  root.innerHTML = h;
+}
 function renderMovements(){ const root=document.getElementById('movementsBody'); const take=db.movements.slice(0,20); root.innerHTML = take.map(m=>'<div class="mono" style="padding:6px 8px;background:var(--panel);margin-bottom:6px;">'+m.sku+' • '+(m.dir==='IN'?'+':'-')+m.qty+' • '+m.dir+'</div>').join('') || '<p class="muted">No movements yet.</p>'; }
 const MIN_STOCK_RULES = [ {model:'J139',qty:500}, {model:'J159',qty:100}, {model:'J179',qty:100}, {containsAll:['J100','WALL MOUNT'],qty:100}, {containsAny:['POWER SUPPLY','POWER SUPPLIES'],qty:15}, {model:'JWIFI01A',qty:2} ];
 const MIN_STOCK = { 'HSSB': MIN_STOCK_RULES, 'C221': MIN_STOCK_RULES };
