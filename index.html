@@ -9,11 +9,6 @@
 *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial}
 .wrap{max-width:1200px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
 @media (max-width: 1000px){.wrap{grid-template-columns:1fr}}
-.num { text-align: right; }
-.num { text-align:right; }
-.num.ok   { color:#e5e7eb; }   /* white (default) */
-.num.warn { color:#facc15; }   /* yellow */
-.num.bad  { color:#ef4444; }   /* red */
 .card{background:var(--card);border:1px solid var(--ring);border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .card header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -23,55 +18,14 @@
 .controls input,.controls button{height:36px;background:#0b1220;color:var(--ink);border:1px solid var(--ring);border-radius:10px;padding:0 10px}
 .controls button{cursor:pointer}
 #outboxBadge{padding:2px 6px;border:1px dashed var(--muted);border-radius:999px}
-
-table{width:100%;
-      border-collapse:collapse;
-      border-spacing:0}
-td,th{padding:2px 6px;
-     background:transparent; /*var(--panel)*/
-     line-height:1.0;
- }
-/*th{text-align:left;color:var(--muted);font-weight:600}*/
-tbody tr + tr td, tbody tr + tr th{
-  border-top:1px solid var(--ring);   /* subtle row dividers */
-}
-
-#minAlerts {display:none !important;}
+table{width:100%;border-collapse:separate;border-spacing:0 6px}
+td,th{padding:8px 6px;background:var(--panel)}
+th{text-align:left;color:var(--muted);font-weight:600}
 #minAlerts .alert{padding:8px 10px;background:#3a2e17;border:1px solid #6a531a;border-radius:8px;margin:6px 0}
 #minAlerts .ok{padding:8px 10px;background:#0f2e21;border:1px solid #256a45;border-radius:8px;margin:6px 0}
 .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ring);border-radius:999px;padding:6px 10px}
 .netdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b}
 [data-net="online"] .netdot{background:#10b981}
-/* Compact inventory table rows */
-.inventory-body table{
-  border-collapse: collapse !important;
-  border-spacing: 0 !important;
-  table-layout: fixed;               /* enables ellipsis */
-}
-
-.inventory-body th,
-.inventory-body td{
-  padding: 2px 6px !important;       /* tighter */
-  background: transparent !important;
-  line-height: 1.2;
-  border-bottom: 1px solid var(--ring);
-}
-
-.inventory-body th.num,
-.inventory-body td.num{
-  text-align: right;
-  width: 72px;                       /* narrow number columns */
-}
-
-/* keep first column on one line with ellipsis */
-.inventory-body th:first-child,
-.inventory-body td:first-child{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-  
 </style>
 </head>
 <body>
@@ -169,61 +123,7 @@ function setHint(s){ const el=document.getElementById('scanHint'); if(el) el.tex
 
 // ====== RENDERING ======
 function renderLive(){ document.getElementById('scan_loc').textContent = state.loc; document.getElementById('scan_mode').textContent = state.mode; document.getElementById('scan_qty').textContent = state.qty; }
-
-// Replace your current renderInventory() with this:
-function renderInventory(){
-  const root = document.querySelector('.inventory-body');
-  const LOCS = ['HSSB','C221','HLMC'];     // change names if needed
-  const APPROACH_PCT = 0.10;               // “approaching” = within 10% above min
-
-  // Table rows
-  const rows = Object.entries(db.items).map(([sku,it])=>{
-    const label = (it.desc && it.desc.trim()) ? it.desc : sku;
-    const locs = it.locations || {};
-    const counts = {};
-    LOCS.forEach(L => counts[L] = Number(locs[L] || 0));
-    return { sku, it, label, counts };
-  }).sort((a,b)=> a.label.localeCompare(b.label,'en',{numeric:true,sensitivity:'base'}));
-
-  // Helpers
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => (
-    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[c]
-  ));
-  function cellClass(loc, have, it, sku){
-    if (loc === 'HLMC') return 'ok';                 // no minimums for HLMC
-    const min = minRequiredFor(it, sku, loc) || 0;   // uses your existing rules
-    if (min <= 0) return 'ok';
-    if (have < min) return 'bad';
-    const warnUpTo = Math.ceil(min * 1.10); // within 10% above min
-    if (have <= warnUpTo) return 'warn';
-    return 'ok';
-  }
-
-  // Totals
-  //const totals = { HSSB:0, C221:0, HLCM:0 };
-
-  // Build HTML
-  let h = '<table><thead><tr><th>Item</th>'
-        + LOCS.map(L=>`<th class="num">${L}</th>`).join('')
-        + '</tr></thead><tbody>';
-
-  for (const r of rows){
-    LOCS.forEach(L => totals[L] += r.counts[L]);
-    h += `<tr><td title="${esc(r.label)}">${esc(r.label)}</td>`
-       + LOCS.map(L=>{
-           const cls = cellClass(L, r.counts[L], r.it, r.sku);
-           return `<td class="num ${cls}">${r.counts[L]}</td>`;
-         }).join('')
-       + `</tr>`;
-  }
-
- /* h += '</tbody><tfoot><tr><th>Total</th>'
-     + LOCS.map(L=>`<th class="num">${totals[L]}</th>`).join('')
-     + '</tr></tfoot></table>';*/
-
-  root.innerHTML = h;
-}
-
+function renderInventory(){ const root=document.querySelector('.inventory-body'); const keys=Object.keys(db.items); let h='<table><thead><tr><th>SKU</th><th>Description</th><th style="text-align:right">Total</th></tr></thead><tbody>'; for(const sku of keys){ const it=db.items[sku]; const total=Object.values(it.locations||{}).reduce((a,b)=>a+b,0); h += '<tr><td>'+sku+(it.serialized?' • serial':'')+'</td><td>'+ (it.desc||'') +'</td><td style="text-align:right">'+total+'</td></tr>'; } h+='</tbody></table>'; root.innerHTML=h; }
 function renderMovements(){ const root=document.getElementById('movementsBody'); const take=db.movements.slice(0,20); root.innerHTML = take.map(m=>'<div class="mono" style="padding:6px 8px;background:var(--panel);margin-bottom:6px;">'+m.sku+' • '+(m.dir==='IN'?'+':'-')+m.qty+' • '+m.dir+'</div>').join('') || '<p class="muted">No movements yet.</p>'; }
 const MIN_STOCK_RULES = [ {model:'J139',qty:500}, {model:'J159',qty:100}, {model:'J179',qty:100}, {containsAll:['J100','WALL MOUNT'],qty:100}, {containsAny:['POWER SUPPLY','POWER SUPPLIES'],qty:15}, {model:'JWIFI01A',qty:2} ];
 const MIN_STOCK = { 'HSSB': MIN_STOCK_RULES, 'C221': MIN_STOCK_RULES };
@@ -249,83 +149,9 @@ async function handleScan(raw){ const input=String(raw||'').trim(); if(!input) r
 }
 
 // ====== SEED LOADER ======
-// ====== SEED LOADER (robust) ======
-(function(){
-  const KNOWN_LOCS = ['HSSB','C221','HLMC'];
-
-  function normalizeLocKey(k){
-    if (!k) return null;
-    const t = String(k).toUpperCase().trim();
-
-    // fix common typos / variants
-    if (t.includes('HLCM')) return 'HLMC';
-    if (KNOWN_LOCS.includes(t)) return t;
-
-    // fallback for the old bug where a DOM element became a key
-    if (t === '[OBJECT HTML ELEMENT]' || t === '[OBJECT HTMLELEMENT]') return 'HSSB';
-
-    return null; // ignore anything unknown
-  }
-
-  function mapFromExternal(seed){
-    if (!seed || !seed.items) return;
-
-    db.items = {};
-    db.movements.length = 0;
-
-    for (const [sku, item] of Object.entries(seed.items)) {
-      const it = {
-        sku,
-        desc: (item.name || '') + (item.desc ? ' — ' + item.desc : ''),
-        serialized: false,
-        identifiers: {},
-        locations: {},
-        units: []
-      };
-
-      // map UPC/EAN if present
-      if (Array.isArray(item.codes)) {
-        for (const c of item.codes) {
-          if (/^\d{13}$/.test(c)) it.identifiers.ean = c;
-          else if (/^\d{12}$/.test(c)) it.identifiers.upc = c;
-        }
-      }
-
-      // copy stock by location with normalization
-      if (item.stockByLoc && typeof item.stockByLoc === 'object') {
-        for (const [rawLoc, qty] of Object.entries(item.stockByLoc)) {
-          const L = normalizeLocKey(rawLoc);
-          if (!L) continue;
-          const q = Number(qty) || 0;
-          if (q > 0) it.locations[L] = (it.locations[L] || 0) + q;
-        }
-      }
-
-      addItem(it);
-    }
-
-    reindex();
-  }
-
-  try {
-    const embedded = JSON.parse(document.getElementById('seed-db').textContent || 'null');
-    if (embedded) mapFromExternal(embedded);
-  } catch (e) {
-    console.error('Failed to parse embedded seed:', e);
-  }
-
-  // Render even if mapping had issues
-  renderLive();
-  renderInventory();
-  renderMovements();
-  renderMinAlerts();
-
-  // Also try to load inventory-db.json next to the page (optional)
-  try {
-    fetch('inventory-db.json', { cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (d) { mapFromExternal(d); renderInventory(); } });
-  } catch (e) { /* ignore */ }
+(function(){ function mapFromExternal(seed){ if(!seed||!seed.items) return; db.items={}; db.movements.length=0; for(const [sku,item] of Object.entries(seed.items)){ const it={ sku, desc: (item.name||'') + (item.desc? ' — '+item.desc : ''), serialized:false, identifiers:{}, locations:{}, units:[] }; if(Array.isArray(item.codes)){ for(const c of item.codes){ if(/^\d{13}$/.test(c)) it.identifiers.ean=c; else if(/^\d{12}$/.test(c)) it.identifiers.upc=c; } } if(item.stockByLoc && typeof item.stockByLoc==='object'){ for(const [loc,qty] of Object.entries(item.stockByLoc)){ if(!loc || /\[object\s+HTMLElement\]/i.test(String(loc))) continue; const q=Number(qty)||0; if(q>0) it.locations[loc]=q; } } addItem(it); } reindex(); renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); }
+  try { const embedded = JSON.parse(document.getElementById('seed-db').textContent||'null'); if(embedded) mapFromExternal(embedded); } catch(e){}
+  try { fetch('inventory-db.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d) mapFromExternal(d); }); } catch(e){}
 })();
 
 // ====== WIRE UI ======
