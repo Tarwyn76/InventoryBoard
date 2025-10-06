@@ -134,7 +134,7 @@ function renderLive(){ document.getElementById('scan_loc').textContent = state.l
 // Replace your current renderInventory() with this:
 function renderInventory(){
   const root = document.querySelector('.inventory-body');
-  const LOCS = ['HSSB','C221','HLCM'];     // change names if needed
+  const LOCS = ['HSSB','C221','HLMC'];     // change names if needed
   const APPROACH_PCT = 0.10;               // “approaching” = within 10% above min
 
   // Table rows
@@ -211,9 +211,83 @@ async function handleScan(raw){ const input=String(raw||'').trim(); if(!input) r
 }
 
 // ====== SEED LOADER ======
-(function(){ function mapFromExternal(seed){ if(!seed||!seed.items) return; db.items={}; db.movements.length=0; for(const [sku,item] of Object.entries(seed.items)){ const it={ sku, desc: (item.name||'') + (item.desc? ' — '+item.desc : ''), serialized:false, identifiers:{}, locations:{}, units:[] }; if(Array.isArray(item.codes)){ for(const c of item.codes){ if(/^\d{13}$/.test(c)) it.identifiers.ean=c; else if(/^\d{12}$/.test(c)) it.identifiers.upc=c; } } if(item.stockByLoc && typeof item.stockByLoc==='object'){ for(const [loc,qty] of Object.entries(item.stockByLoc)){ if(!loc || /\[object\s+HTMLElement\]/i.test(String(loc))) continue; const q=Number(qty)||0; if(q>0) it.locations[loc]=q; } } addItem(it); } reindex(); renderLive(); renderInventory(); renderMovements(); renderMinAlerts(); }
-  try { const embedded = JSON.parse(document.getElementById('seed-db').textContent||'null'); if(embedded) mapFromExternal(embedded); } catch(e){}
-  try { fetch('inventory-db.json', {cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d) mapFromExternal(d); }); } catch(e){}
+// ====== SEED LOADER (robust) ======
+(function(){
+  const KNOWN_LOCS = ['HSSB','C221','HLMC'];
+
+  function normalizeLocKey(k){
+    if (!k) return null;
+    const t = String(k).toUpperCase().trim();
+
+    // fix common typos / variants
+    if (t.includes('HLCM')) return 'HLMC';
+    if (KNOWN_LOCS.includes(t)) return t;
+
+    // fallback for the old bug where a DOM element became a key
+    if (t === '[OBJECT HTML ELEMENT]' || t === '[OBJECT HTMLELEMENT]') return 'HSSB';
+
+    return null; // ignore anything unknown
+  }
+
+  function mapFromExternal(seed){
+    if (!seed || !seed.items) return;
+
+    db.items = {};
+    db.movements.length = 0;
+
+    for (const [sku, item] of Object.entries(seed.items)) {
+      const it = {
+        sku,
+        desc: (item.name || '') + (item.desc ? ' — ' + item.desc : ''),
+        serialized: false,
+        identifiers: {},
+        locations: {},
+        units: []
+      };
+
+      // map UPC/EAN if present
+      if (Array.isArray(item.codes)) {
+        for (const c of item.codes) {
+          if (/^\d{13}$/.test(c)) it.identifiers.ean = c;
+          else if (/^\d{12}$/.test(c)) it.identifiers.upc = c;
+        }
+      }
+
+      // copy stock by location with normalization
+      if (item.stockByLoc && typeof item.stockByLoc === 'object') {
+        for (const [rawLoc, qty] of Object.entries(item.stockByLoc)) {
+          const L = normalizeLocKey(rawLoc);
+          if (!L) continue;
+          const q = Number(qty) || 0;
+          if (q > 0) it.locations[L] = (it.locations[L] || 0) + q;
+        }
+      }
+
+      addItem(it);
+    }
+
+    reindex();
+  }
+
+  try {
+    const embedded = JSON.parse(document.getElementById('seed-db').textContent || 'null');
+    if (embedded) mapFromExternal(embedded);
+  } catch (e) {
+    console.error('Failed to parse embedded seed:', e);
+  }
+
+  // Render even if mapping had issues
+  renderLive();
+  renderInventory();
+  renderMovements();
+  renderMinAlerts();
+
+  // Also try to load inventory-db.json next to the page (optional)
+  try {
+    fetch('inventory-db.json', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) { mapFromExternal(d); renderInventory(); } });
+  } catch (e) { /* ignore */ }
 })();
 
 // ====== WIRE UI ======
