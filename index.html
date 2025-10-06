@@ -156,11 +156,6 @@ function renderInventory(){
        + `</tr>`;
   }
 
-  h += '</tbody><tfoot><tr><th>Total</th>'
-     + LOCS.map(L=>`<th class="num">${totals[L]}</th>`).join('')
-     + '</tr></tfoot></table>';
-
-  root.innerHTML = h;
 }
 function renderMovements(){ const root=document.getElementById('movementsBody'); const take=db.movements.slice(0,20); root.innerHTML = take.map(m=>'<div class="mono" style="padding:6px 8px;background:var(--panel);margin-bottom:6px;">'+m.sku+' • '+(m.dir==='IN'?'+':'-')+m.qty+' • '+m.dir+'</div>').join('') || '<p class="muted">No movements yet.</p>'; }
 const MIN_STOCK_RULES = [ {model:'J139',qty:500}, {model:'J159',qty:100}, {model:'J179',qty:100}, {containsAll:['J100','WALL MOUNT'],qty:100}, {containsAny:['POWER SUPPLY','POWER SUPPLIES'],qty:15}, {model:'JWIFI01A',qty:2} ];
