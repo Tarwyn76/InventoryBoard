@@ -190,7 +190,7 @@ function renderInventory(){
   }
 
   // Totals
-  const totals = { HSSB:0, C221:0, HLCM:0 };
+  //const totals = { HSSB:0, C221:0, HLCM:0 };
 
   // Build HTML
   let h = '<table><thead><tr><th>Item</th>'
@@ -207,9 +207,9 @@ function renderInventory(){
        + `</tr>`;
   }
 
-  h += '</tbody><tfoot><tr><th>Total</th>'
+ /* h += '</tbody><tfoot><tr><th>Total</th>'
      + LOCS.map(L=>`<th class="num">${totals[L]}</th>`).join('')
-     + '</tr></tfoot></table>';
+     + '</tr></tfoot></table>';*/
 
   root.innerHTML = h;
 }
