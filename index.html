@@ -23,9 +23,17 @@
 .controls input,.controls button{height:36px;background:#0b1220;color:var(--ink);border:1px solid var(--ring);border-radius:10px;padding:0 10px}
 .controls button{cursor:pointer}
 #outboxBadge{padding:2px 6px;border:1px dashed var(--muted);border-radius:999px}
+
 table{width:100%;border-collapse:separate;border-spacing:0 6px}
-td,th{padding:8px 6px;background:var(--panel)}
+td,th{padding:2px 6px;
+     background:var(--panel)
+     line-height:1.0;
+ }
 th{text-align:left;color:var(--muted);font-weight:600}
+tbody tr + tr td, tbody tr + tr th{
+  border-top:1px solid var(--ring);   /* subtle row dividers */
+}
+
 #minAlerts {display:none !important;}
 #minAlerts .alert{padding:8px 10px;background:#3a2e17;border:1px solid #6a531a;border-radius:8px;margin:6px 0}
 #minAlerts .ok{padding:8px 10px;background:#0f2e21;border:1px solid #256a45;border-radius:8px;margin:6px 0}
